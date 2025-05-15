@@ -312,6 +312,7 @@ If you develop or use ProPainter in your projects, feel free to let me know. Als
 
 - Streaming ProPainter: https://github.com/osmr/propainter
 - Faster ProPainter: https://github.com/halfzm/faster-propainter
+- GPU Memory Efficient ProPainter: https://github.com/kimx3966/Effi-ProPainter
 - ProPainter WebUI: https://github.com/halfzm/ProPainter-Webui
 - ProPainter ComfyUI: https://github.com/daniabib/ComfyUI_ProPainter_Nodes
 - Cutie (video segmentation): https://github.com/hkchengrex/Cutie
