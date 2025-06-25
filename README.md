@@ -149,19 +149,34 @@ weights
 We provide some examples in the [`inputs`](./inputs) folder. 
 Run the following commands to try it out:
 ```shell
-# The first example (object removal)
+# Example 1: Object removal with default output settings
+# Output: results/bmx-trees/bmx-trees_0000.png, ...
 python inference_propainter.py --video inputs/object_removal/bmx-trees --mask inputs/object_removal/bmx-trees_mask 
-# The second example (video completion)
-python inference_propainter.py --video inputs/video_completion/running_car.mp4 --mask inputs/video_completion/mask_square.png --height 240 --width 432
+
+# Example 2: Video completion, specifying resolution and output directory.
+# The basename of the --output path ('custom_run_1') will be used as the filename prefix.
+# Output: /path/to/my_outputs/custom_run_1/running_car/custom_run_1_0000.png, ...
+python inference_propainter.py --video inputs/video_completion/running_car.mp4 \
+                               --mask inputs/video_completion/mask_square.png \
+                               --height 240 --width 432 \
+                               --output /path/to/my_outputs/custom_run_1
 ```
 
-The results will be saved in the `results` folder.
-To test your own videos, please prepare the input `mp4 video` (or `split frames`) and `frame-wise mask(s)`.
+The script now outputs a sequence of PNG frames by default.
+- The output directory structure is `[path_from_--output_arg]/[video_name]/`. If `--output` is not specified, it defaults to `results/[video_name]/`.
+- The output filename prefix is taken from the basename of the `--output` argument's path. If `--output` is not specified (i.e., defaults to `results`), the `video_name` is used as the prefix.
+- For example, `python inference_propainter.py --video V.mp4 --mask M.png --output out/runA` will produce `out/runA/V/runA_0000.png`, etc.
+- `python inference_propainter.py --video V.mp4 --mask M.png` will produce `results/V/V_0000.png`, etc.
 
-If you want to specify the video resolution for processing or avoid running out of memory, you can set the video size of `--width` and `--height`:
+To test your own videos, please prepare the input `mp4 video` (or a folder of split frames) and `frame-wise mask(s)` (either a single mask image or a folder of masks).
+
+If you want to specify the video resolution for processing or avoid running out of memory, you can set `--width` and `--height`:
 ```shell
-# process a 576x320 video; set --fp16 to use fp16 (half precision) during inference.
-python inference_propainter.py --video inputs/video_completion/running_car.mp4 --mask inputs/video_completion/mask_square.png --height 320 --width 576 --fp16
+# Process a 576x320 video; set --fp16 to use fp16 (half precision) during inference.
+# Output: results/running_car/running_car_0000.png, ...
+python inference_propainter.py --video inputs/video_completion/running_car.mp4 \
+                               --mask inputs/video_completion/mask_square.png \
+                               --height 320 --width 576 --fp16
 ```
 
 #### 💃🏻 Interactive Demo

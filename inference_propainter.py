@@ -208,9 +208,8 @@ if __name__ == '__main__':
     parser.add_argument(
         '--scale_w', type=float, default=1.2, help='Outpainting scale of width for video_outpainting mode.')
     parser.add_argument(
-        '--save_fps', type=int, default=24, help='Frame per second. Default: 24')
-    parser.add_argument(
-        '--save_frames', action='store_true', help='Save output frames. Default: False')
+        '--save_fps', type=int, default=24, help='Frame per second (relevant for potential future video outputs). Default: 24')
+    # --save_frames is removed as saving frames is now default.
     parser.add_argument(
         '--fp16', action='store_true', help='Use fp16 (half precision) during inference. Default: fp32 (single precision).')
 
@@ -222,6 +221,13 @@ if __name__ == '__main__':
         use_half = False
 
     frames, fps, size, video_name = read_frame_from_videos(args.video)
+
+    # Determine output filename prefix - moved after video_name is defined
+    if args.output == 'results': # Default output directory
+        output_filename_prefix = video_name
+    else:
+        output_filename_prefix = os.path.basename(os.path.normpath(args.output))
+
     if not args.width == -1 and not args.height == -1:
         size = (args.width, args.height)
     if not args.resize_ratio == 1.0:
@@ -247,18 +253,8 @@ if __name__ == '__main__':
     else:
         raise NotImplementedError
     
-    # for saving the masked frames or video
-    masked_frame_for_save = []
-    for i in range(len(frames)):
-        mask_ = np.expand_dims(np.array(masks_dilated[i]),2).repeat(3, axis=2)/255.
-        img = np.array(frames[i])
-        green = np.zeros([h, w, 3]) 
-        green[:,:,1] = 255
-        alpha = 0.6
-        # alpha = 1.0
-        fuse_img = (1-alpha)*img + alpha*green
-        fuse_img = mask_ * fuse_img + (1-mask_)*img
-        masked_frame_for_save.append(fuse_img.astype(np.uint8))
+    # The `masked_frame_for_save` list and its population loop are removed
+    # as they were only used for the `masked_in.mp4` output which is now removed.
 
     frames_inp = [np.array(f).astype(np.uint8) for f in frames]
     frames = to_tensors()(frames).unsqueeze(0) * 2 - 1    
@@ -451,26 +447,25 @@ if __name__ == '__main__':
         
         torch.cuda.empty_cache()
                 
-    # save each frame
-    if args.save_frames:
-        for idx in range(video_length):
-            f = comp_frames[idx]
-            f = cv2.resize(f, out_size, interpolation = cv2.INTER_CUBIC)
-            f = cv2.cvtColor(f, cv2.COLOR_BGR2RGB)
-            img_save_root = os.path.join(save_root, 'frames', str(idx).zfill(4)+'.png')
-            imwrite(f, img_save_root)
-                    
+    # Save each frame as PNG
+    # The old `if args.save_frames:` is removed as this is now default behavior.
+    # Output path is now directly in save_root (args.output/video_name/)
+    # Output filename uses the determined prefix.
+    for idx in range(video_length):
+        frame_to_save = comp_frames[idx]
+        frame_to_save = cv2.resize(frame_to_save, out_size, interpolation=cv2.INTER_CUBIC)
+        frame_to_save = cv2.cvtColor(frame_to_save, cv2.COLOR_BGR2RGB) # Ensure RGB
 
-    # if args.mode == 'video_outpainting':
-    #     comp_frames = [i[10:-10,10:-10] for i in comp_frames]
-    #     masked_frame_for_save = [i[10:-10,10:-10] for i in masked_frame_for_save]
-    
-    # save videos frame
-    masked_frame_for_save = [cv2.resize(f, out_size) for f in masked_frame_for_save]
-    comp_frames = [cv2.resize(f, out_size) for f in comp_frames]
-    imageio.mimwrite(os.path.join(save_root, 'masked_in.mp4'), masked_frame_for_save, fps=fps, quality=7)
-    imageio.mimwrite(os.path.join(save_root, 'inpaint_out.mp4'), comp_frames, fps=fps, quality=7)
-    
-    print(f'\nAll results are saved in {save_root}')
+        # Construct filename: <output_filename_prefix>_XXXX.png
+        frame_filename = f"{output_filename_prefix}_{str(idx).zfill(4)}.png"
+        img_save_path = os.path.join(save_root, frame_filename)
+        imwrite(frame_to_save, img_save_path)
+                    
+    # Removed MP4 saving logic for 'masked_in.mp4' and 'inpaint_out.mp4'
+    # The `masked_frame_for_save` list is no longer needed as it was for 'masked_in.mp4'.
+    # If `masked_frame_for_save` was used for anything else, that logic would need to be reviewed.
+    # For now, assuming it was only for the removed MP4.
+
+    print(f'\nProcessed PNG sequence saved in {save_root}')
     
     torch.cuda.empty_cache()
